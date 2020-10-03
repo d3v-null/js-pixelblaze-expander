@@ -1,0 +1,45 @@
+{
+  "name": "pixelblaze-expander",
+  "version": "0.0.1",
+  "description": "A Library for controlling pixelblaze expander A.K.A. ElectroMage Serial to 8x WS2812/APA102 Driver boards",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --watch --coverage",
+    "test-ci": "jest --ci --coverage",
+    "coverage": "codecov"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/derwentx/js-pixelblaze-expander.git"
+  },
+  "keywords": [
+    "led",
+    "pixelblaze",
+    "electromage",
+    "ws2811",
+    "ws2812",
+    "ws281x",
+    "apa102",
+    "sk9822",
+    "serial",
+    "driver",
+    "neopixel"
+  ],
+  "author": "[Derwent \"Dev\" McElhinney] (http://dev.laserphile.com/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/derwentx/js-pixelblaze-expander/issues"
+  },
+  "homepage": "https://github.com/derwentx/js-pixelblaze-expander#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.11.6",
+    "@babel/core": "^7.11.6",
+    "@babel/preset-env": "^7.11.5",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "jest": "^26.4.2"
+  },
+  "dependencies": {
+    "colorsys": "^1.0.22",
+    "serialport": "^9.0.1"
+  }
+}
