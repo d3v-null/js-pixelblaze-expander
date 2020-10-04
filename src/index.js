@@ -57,7 +57,7 @@ class PBXHeader {
     static magic = "UPXL";
 
     constructor(channel, recordType) {
-        if (channel > 63) {
+        if (channel >= CHANNEL_MAX) {
             throw new Error(`Channel ${channel} larger than channel maximum, ${CHANNEL_MAX}`);
         } else if (channel < 0) {
             throw new Error(`Channel ${channel} can't be less than zero`);
