@@ -1,4 +1,5 @@
 const SerialPort = require('serialport');
+var node = require("deasync");
 const regeneratorRuntime = require("regenerator-runtime");
 
 const DEFAULT_OPTIONS = {
@@ -352,16 +353,6 @@ class ExpanderDevice {
             }
             console.log('port opened', JSON.stringify(arguments))
         })
-        // this.port.on('drain', function (err) {
-        //     if (err) {
-        //         return console.log('Error draining port: ', err.message)
-        //     }
-        //     console.log('port drained', JSON.stringify(arguments))
-        // })
-        // this.allChunks = [];
-        // this.port.on('data', function (chunk) {
-        //     this.allChunks.push(chunk);
-        // })
         this.channelMessages = {};
         Object.entries(options.channels).forEach(([channel, { order, type, capacity }]) => {
             // console.log(`channel: ${JSON.stringify({ channel, order, capacity, type })}`);
@@ -384,36 +375,62 @@ class ExpanderDevice {
         this.drawAllMessage = new PBXDrawAllMessage();
     }
 
-    async promiseSerialWrite(bytes) {
+    promiseSerialWrite(bytes) {
         return new Promise((res, rej) => {
             this.port.write(bytes, function (err) {
                 if (err) {
                     rej(err);
                 }
-                res(arguments);
+                res(true);
             });
         })
     }
 
-    async promiseSerialDrain() {
+    serialWriteBlocking(bytes) {
+        let done = false;
+        const result = this.port.write(bytes, function (err) {
+            if (err) {
+                console.error(err);
+            }
+            done = true;
+        })
+        while(!done) {
+            node.runLoopOnce();
+        }
+        return result;
+    }
+
+    promiseSerialDrain() {
         return new Promise((res, rej) => {
             this.port.drain(function (err) {
                 if (err) {
                     rej(err);
                 }
-                res(arguments);
+                res(true);
             });
         })
     }
 
-    async promiseSerialWriteDrain(bytes) {
+    serialDrainBlocking() {
+        let done = false;
+        this.port.drain(function (err) {
+            if (err) {
+                console.error(err);
+            }
+            done = true;
+        });
+        while(!done) {
+            node.runLoopOnce();
+        }
+    }
+
+    promiseSerialWriteDrain(bytes) {
         return new Promise((function (res, rej) {
             const result = this.port.write(bytes, function (err) {
                 if (err) {
                     rej(err);
                 }
             });
-            // console.log(`drain ${result ? 'not ' : ''}required`);
             if (!result) {
                 this.promiseSerialDrain().then(() => {
                     res(result);
@@ -424,8 +441,14 @@ class ExpanderDevice {
         }).bind(this))
     }
 
-    async send(channel, colors, drawAll = true) {
-        // const startTime = Date.now();
+    serialWriteDrain(bytes) {
+        const result = this.serialWriteBlocking(bytes);
+        if (!result) {
+            this.serialDrainBlocking();
+        }
+    }
+
+    send(channel, colors, drawAll = true) {
         if (!Object.keys(this.channelMessages).includes(channel.toString())) {
             throw new Error(
                 `channel ${channel} is not defined, only `
@@ -433,30 +456,32 @@ class ExpanderDevice {
         }
         const dataMessage = this.channelMessages[channel];
         dataMessage.setPixels(colors);
-        const dataMessageBytes = dataMessage.toBytes();
-        const promises = [this.promiseSerialWrite(dataMessageBytes)];
+        const promises = [this.promiseSerialWrite(dataMessage.toBytes())];
         if (drawAll) {
             promises.push(this.drawAll());
         }
         return Promise.all(promises)
-        // .then(() => {
-        //     const deltaMs = Date.now() - startTime;
-        //     console.log(`finished send after ${deltaMs}ms, promises: `, promises);
-        // })
     }
 
-    async drawAll() {
+    sendBlocking(channel, colors, drawAll) {
+        const dataMessage = this.channelMessages[channel];
+        dataMessage.setPixels(colors);
+        this.serialWriteBlocking((dataMessage.toBytes()));
+        if (drawAll) {
+            this.drawAllBlocking();
+        }
+    }
+
+    drawAll() {
         const drawAllMessageBytes = this.drawAllMessage.toBytes();
-        // const startTime = Date.now();
-        const promises = [
+        return Promise.all([
             this.promiseSerialWriteDrain(drawAllMessageBytes),
             new Promise(res => setTimeout(res, 5))
-        ]
-        return Promise.all(promises)
-        // .then(() => {
-        //     const deltaMs = Date.now() - startTime;
-        //     console.log(`finished drawAll after ${deltaMs}ms. Promises:`, promises);
-        // });
+        ]);
+    }
+
+    drawAllBlocking() {
+        this.serialWriteDrain(this.drawAllMessage.toBytes())
     }
 }
 

@@ -16,7 +16,7 @@ process.on('uncaughtException', (err) => {
     process.exit(1) //mandatory (as per the Node docs)
 })
 
-class WS281XExample {
+class WS281XBlockingExample {
 
     constructor() {
         this.options = {
@@ -34,29 +34,26 @@ class WS281XExample {
         this.startTime = Date.now();
     }
 
-    async loop() {
+    loop() {
         this.loopCount += 1;
         const loopStartTime = Date.now();
-        const promises = Object.entries(this.options.channels).map(async ([channel, { capacity }]) => {
+        Object.entries(this.options.channels).forEach(async ([channel, { capacity }]) => {
             const colors = Array(capacity).fill().map((_, idx) => {
                 const { r, g, b } = hsl2Rgb((idx * 3) + (this.loopCount * 5), 100, 10);
                 return [r, g, b];
             });
-            return this.device.send(channel, colors, false);
+            this.device.sendBlocking(channel, colors, false);
         })
-        promises.push(this.device.drawAll());
-        return Promise.all(promises).then(() => {
-            const frameRate = parseInt(1000 * this.loopCount / (Date.now() - this.startTime))
-                .toString(10).padStart(10, ' ');
-            const frameTime = Date.now() - loopStartTime;
-            process.stdout.write(`frameRate: ${frameRate}, last: ${frameTime}ms\r`);
-        });
+        this.device.drawAllBlocking();
+        const frameRate = parseInt(1000 * this.loopCount / (Date.now() - this.startTime))
+            .toString(10).padStart(10, ' ');
+        const frameTime = Date.now() - loopStartTime;
+        process.stdout.write(`frameRate: ${frameRate}, last: ${frameTime}ms\r`);
     }
 
-    async loopForever() {
-        this.loop().then(() => {
-            setTimeout(this.loopForever.bind(this), 1);
-        });
+    loopForever() {
+        this.loop();
+        setTimeout(this.loopForever.bind(this), 1);
     }
 
     run() {
@@ -64,4 +61,4 @@ class WS281XExample {
     }
 };
 
-(new WS281XExample()).run();
+(new WS281XBlockingExample()).run();
