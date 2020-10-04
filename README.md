@@ -29,7 +29,7 @@ var device = new ExpanderDevice(portName, options);
 where:
 
 - `portName` is the name of the [serial port](https://serialport.io/docs/api-stream#path) which the
-  PBX board is connected to (For example, /dev/tty.XXX on Mac/Linux, or COM1 on Windows), and
+  PBX board is connected to (For example, `/dev/tty.XXX` on Mac/Linux, or `COM1` on Windows), and
 - `options` has the following structure:
 
 ```javascript
