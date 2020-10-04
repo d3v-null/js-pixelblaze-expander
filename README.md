@@ -5,6 +5,13 @@ A NodeJS Library for controlling
 [ElectroMage Serial to 8x WS2812/APA102 Driver](https://www.tindie.com/products/electromage/electromage-serial-to-8x-ws2812apa102-driver/)
 boards via serial port.
 
+![Node.js Build Status](https://github.com/derwentx/js-pixelblaze-expander/workflows/Node.js%20Lint%20and%20Coverage/badge.svg)
+[![Maintainability](https://api.codeclimate.com/v1/badges/b16f8ee13c50462afb9a/maintainability)](https://codeclimate.com/github/derwentx/js-pixelblaze-expander/maintainability)
+[![codecov](https://codecov.io/gh/derwentx/js-pixelblaze-expander/branch/master/graph/badge.svg?token=U2FEMWJX04)](undefined)
+[![Known Vulnerabilities](https://snyk.io/test/github/derwentx/js-pixelblaze-expander/badge.svg?targetFile=package.json)](https://snyk.io/test/github/derwentx/js-pixelblaze-expander?targetFile=package.json)
+[![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/derwentx/js-pixelblaze-expander.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/derwentx/js-pixelblaze-expander/context:javascript)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/derwentx/js-pixelblaze-expander.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/derwentx/js-pixelblaze-expander/alerts/)
+
 ## Installation
 
 ```bash
