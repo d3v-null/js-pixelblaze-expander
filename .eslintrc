@@ -1,0 +1,24 @@
+{
+    "extends": ["airbnb-base", "prettier"],
+    "parserOptions": {
+      "ecmaVersion": 9,
+      "sourceType": "module",
+      "ecmaFeatures": {
+        "experimentalObjectRestSpread": true
+      }
+    },
+    "env": {
+      "node": true,
+      "jest": true,
+      "es6": true
+    },
+    "plugins": ["prettier", "you-dont-need-lodash-underscore"],
+    "rules": {
+      "prettier/prettier": "error",
+      "no-console": 0,
+      "no-unused-vars": 1,
+      "react/jsx-filename-extension": 0,
+      "react/prop-types": 0,
+      "import/prefer-default-export": 0
+    }
+  }
