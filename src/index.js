@@ -1,13 +1,14 @@
 const SerialPort = require('serialport');
+const regeneratorRuntime = require("regenerator-runtime");
 
 const DEFAULT_OPTIONS = {
     baudRate: 2000000,
     dataBits: 8,
     stopBits: 1,
     parity: 'none',
-    channelDefs: [
-        { channel: 0 }
-    ]
+    channels: {
+        0: {}
+    }
 }
 
 const CHANNEL_MAX = 64;
@@ -327,21 +328,51 @@ class PBXWS281XMessage extends PBXDataMessage {
     }
 }
 
+class PBAPA102DataMessage extends PBXDataMessage {
+    // TODO
+}
+
+class PBAPA102ClockMessage extends PBXMessage {
+    // TODO
+}
+
 class ExpanderDevice {
     constructor(portName, options) {
         var options = { ...DEFAULT_OPTIONS, ...options };
-        var { baudRate, dataBits, stopBits, parity, channelDefs } = options;
+        var { baudRate, dataBits, stopBits, parity, channels } = options;
         this.port = new SerialPort(portName, { baudRate, dataBits, stopBits, parity });
-        this.port.on('error', (err) => {
+        this.port.on('error', function (err) {
             if (err) {
-                return console.log('Error on write: ', err.message)
+                return console.error('Error on write: ', err.message)
             }
         })
+        this.port.on('open', function (err) {
+            if (err) {
+                return console.log('Error opening port: ', err.message)
+            }
+            console.log('port opened', JSON.stringify(arguments))
+        })
+        // this.port.on('drain', function (err) {
+        //     if (err) {
+        //         return console.log('Error draining port: ', err.message)
+        //     }
+        //     console.log('port drained', JSON.stringify(arguments))
+        // })
+        // this.allChunks = [];
+        // this.port.on('data', function (chunk) {
+        //     this.allChunks.push(chunk);
+        // })
         this.channelMessages = {};
-        channelDefs.forEach(({ channel, order, capacity, type }) => {
-            console.log(`channelDef: ${JSON.stringify({ channel, order, capacity, type })}`);
+        Object.entries(options.channels).forEach(([channel, { order, type, capacity }]) => {
+            // console.log(`channel: ${JSON.stringify({ channel, order, capacity, type })}`);
             var messageClass
             switch (type) {
+                case 'APA102_DATA':
+                case 'SK9822_DATA':
+                    messageClass = PBAPA102DataMessage;
+                case 'APA102_CLOCK':
+                case 'SK9822_CLOCK':
+                    messageClass = PBAPA102ClockMessage;
                 case 'WS281X':
                 case 'WS2811':
                 case 'WS2812':
@@ -353,7 +384,48 @@ class ExpanderDevice {
         this.drawAllMessage = new PBXDrawAllMessage();
     }
 
-    send(channel, colors, drawAll = true) {
+    async promiseSerialWrite(bytes) {
+        return new Promise((res, rej) => {
+            this.port.write(bytes, function (err) {
+                if (err) {
+                    rej(err);
+                }
+                res(arguments);
+            });
+        })
+    }
+
+    async promiseSerialDrain() {
+        return new Promise((res, rej) => {
+            this.port.drain(function (err) {
+                if (err) {
+                    rej(err);
+                }
+                res(arguments);
+            });
+        })
+    }
+
+    async promiseSerialWriteDrain(bytes) {
+        return new Promise((function (res, rej) {
+            const result = this.port.write(bytes, function (err) {
+                if (err) {
+                    rej(err);
+                }
+            });
+            // console.log(`drain ${result ? 'not ' : ''}required`);
+            if (!result) {
+                this.promiseSerialDrain().then(() => {
+                    res(result);
+                })
+            } else {
+                res(result)
+            }
+        }).bind(this))
+    }
+
+    async send(channel, colors, drawAll = true) {
+        // const startTime = Date.now();
         if (!Object.keys(this.channelMessages).includes(channel.toString())) {
             throw new Error(
                 `channel ${channel} is not defined, only `
@@ -362,16 +434,29 @@ class ExpanderDevice {
         const dataMessage = this.channelMessages[channel];
         dataMessage.setPixels(colors);
         const dataMessageBytes = dataMessage.toBytes();
-        this.port.write(dataMessageBytes, this.cbSerialError);
+        const promises = [this.promiseSerialWrite(dataMessageBytes)];
         if (drawAll) {
-            this.drawAll();
+            promises.push(this.drawAll());
         }
+        return Promise.all(promises)
+        // .then(() => {
+        //     const deltaMs = Date.now() - startTime;
+        //     console.log(`finished send after ${deltaMs}ms, promises: `, promises);
+        // })
     }
 
-    drawAll() {
+    async drawAll() {
         const drawAllMessageBytes = this.drawAllMessage.toBytes();
-        this.port.write(drawAllMessageBytes, this.cbSerialError);
-        this.port.drain();
+        // const startTime = Date.now();
+        const promises = [
+            this.promiseSerialWriteDrain(drawAllMessageBytes),
+            new Promise(res => setTimeout(res, 5))
+        ]
+        return Promise.all(promises)
+        // .then(() => {
+        //     const deltaMs = Date.now() - startTime;
+        //     console.log(`finished drawAll after ${deltaMs}ms. Promises:`, promises);
+        // });
     }
 }
 

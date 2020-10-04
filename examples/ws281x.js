@@ -1,4 +1,4 @@
-const {ExpanderDevice} = require('../src/index.js');
+const { ExpanderDevice } = require('../src/index.js');
 import { hsl2Rgb } from 'colorsys';
 
 /**
@@ -20,33 +20,48 @@ class WS281XExample {
 
     constructor() {
         this.options = {
-            channelDefs: [
-                {channel: 0, capacity: 300},
-                {channel: 1, capacity: 300},
-                {channel: 2, capacity: 300},
-                {channel: 3, capacity: 300},
-                {channel: 4, capacity: 300},
-                {channel: 5, capacity: 300}
-            ]
+            channels: {
+                0: { capacity: 300 },
+                1: { capacity: 300 },
+                2: { capacity: 300 },
+                3: { capacity: 300 },
+                4: { capacity: 300 },
+                5: { capacity: 300 }
+            }
         }
+        this.rateCap = 1000;
         this.device = new ExpanderDevice('/dev/tty.usbserial-AD025M69', this.options);
         this.loopCount = 0;
+        this.startTime = Date.now();
     }
 
-    loop() {
+    async loop() {
         this.loopCount += 1;
-        this.options.channelDefs.forEach(({channel, capacity}) => {
+        const loopStartTime = Date.now();
+        const promises = Object.entries(this.options.channels).map(async ([channel, { capacity }]) => {
             const colors = Array(capacity).fill().map((_, idx) => {
-                const {r, g, b} = hsl2Rgb(idx * 5 + this.loopCount, 100, 10);
+                const { r, g, b } = hsl2Rgb((idx * 3) + (this.loopCount * 5), 100, 10);
                 return [r, g, b];
             });
-            this.device.send(channel, colors, false);
+            return this.device.send(channel, colors, false);
         })
-        this.device.drawAll();
+        promises.push(this.device.drawAll());
+        return Promise.all(promises).then(() => {
+            const frameRate = parseInt(1000 * this.loopCount / (Date.now() - this.startTime))
+                .toString(10).padStart(10, ' ');
+            const frameTime = Date.now() - loopStartTime;
+            process.stdout.write(`frameRate: ${frameRate}, last: ${frameTime}ms\r`);
+        });
+    }
+
+    async loopForever() {
+        this.loop().then(() => {
+            setTimeout(this.loopForever.bind(this), 1);
+        });
     }
 
     run() {
-        setInterval(this.loop.bind(this) , 30);
+        this.loopForever();
     }
 };
 

@@ -56,14 +56,14 @@ var options = {
    */
   parity,
   /**
-   * (Array<Object>) Definition of each channel that has LEDs connected
+   * (Object<Integer, Object>) Definition of each channel that has LEDs connected.
+   * Default is a single RGB WS281X device with maximum capacity on channel 0.
    */
-  channelDefs: [
-    {
-      /**
-       * (Integer) channel number as labeled on the PBX PCB.
-       */
-      channel,
+  channels: [
+    /**
+     * (Integer) channel number as labeled on the PBX PCB.
+     */
+    0: {
       /**
        * (String) color order setting. Default for APA102 is "RGBW", default for  Only "RGB" or
        * "RGBW" are currently supported, but it's pretty easy to add more by extending

@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "colorsys": "^1.0.22",
+    "regenerator-runtime": "^0.13.7",
     "serialport": "^9.0.1"
   }
 }
