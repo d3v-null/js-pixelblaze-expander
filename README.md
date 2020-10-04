@@ -37,34 +37,37 @@ var options = {
    * (Integer) data bits. Default for PBX is 8, See
    * <https://serialport.io/docs/api-stream#openoptions> for more info.
    */
-  dataBits
+  dataBits,
   /**
    * (Integer) stop bits. Default for PBX is 1, See
    * <https://serialport.io/docs/api-stream#openoptions> for more info.
    */
-  stopBits
+  stopBits,
   /**
    * (String) parity settings. Default for PBX is 'none', See
    * <https://serialport.io/docs/api-stream#openoptions> for more info.
    */
-  parity
-  channelDefs: [ /* (Array<Object>) Definition of each channel that has LEDs connected */
+  parity,
+  /**
+   * (Array<Object>) Definition of each channel that has LEDs connected
+   */
+  channelDefs: [
     {
       /**
        * (Integer) channel number as labeled on the PBX PCB.
        */
-      channel
+      channel,
       /**
        * (String) color order setting. Default for APA102 is "RGBW", default for  Only "RGB" or
        * "RGBW" are currently supported, but it's pretty easy to add more by extending
        * `PBX_COLOR_ORDERS`.
        */
-      order
+      order,
       /*
        * (String) protocol used by PBX to talk to LEDs, only "WS281X" is currently supported.
        * "APA102_DATA" and "APA_CLOCK" to be implemented soon.
        */
-      type
+      type,
       /**
        * (Integer) number of pixels connected to this channel. By default this is the maximum
        * number of pixels that can be sent, for the channel, which depends on the number of
