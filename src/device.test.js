@@ -1,7 +1,7 @@
 import {ExpanderDevice} from "./device";
 import SerialPort from "serialport";
 
-jest.mock("SerialPort");
+jest.mock("serialport");
 
 const testOptions = {
     baudRate: 123,
