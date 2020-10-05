@@ -136,3 +136,19 @@ export class PBAPA102DataMessage extends PBXDataMessage {
 
 export class PBAPA102ClockMessage extends PBXMessage {
 }
+
+export function getMessageClass(type) {
+    switch (type) {
+        case 'APA102_DATA':
+        case 'SK9822_DATA':
+            return PBAPA102DataMessage;
+        case 'APA102_CLOCK':
+        case 'SK9822_CLOCK':
+            return PBAPA102ClockMessage;
+        case 'WS281X':
+        case 'WS2811':
+        case 'WS2812':
+        default:
+            return PBXWS281XMessage;
+    }
+}

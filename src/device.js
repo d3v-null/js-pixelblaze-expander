@@ -1,4 +1,4 @@
-import { PBAPA102DataMessage, PBAPA102ClockMessage, PBXWS281XMessage, PBXDrawAllMessage } from './messages';
+import { getMessageClass, PBXDrawAllMessage } from './messages';
 import { PBX_COLOR_ORDERS } from './colorOrder';
 import SerialPort from 'serialport';
 import node from 'deasync';
@@ -67,20 +67,7 @@ export class ExpanderDevice {
         this.channelMessages = {};
         Object.entries(channels).forEach(([channel, { order, type, capacity }]) => {
             // console.log(`channel: ${JSON.stringify({ channel, order, capacity, type })}`);
-            var messageClass;
-            switch (type) {
-                case 'APA102_DATA':
-                case 'SK9822_DATA':
-                    messageClass = PBAPA102DataMessage;
-                case 'APA102_CLOCK':
-                case 'SK9822_CLOCK':
-                    messageClass = PBAPA102ClockMessage;
-                case 'WS281X':
-                case 'WS2811':
-                case 'WS2812':
-                default:
-                    messageClass = PBXWS281XMessage;
-            }
+            const messageClass = getMessageClass(type);
             this.channelMessages[channel] = new messageClass(channel, PBX_COLOR_ORDERS[order], capacity);
         });
         this.drawAllMessage = new PBXDrawAllMessage();
