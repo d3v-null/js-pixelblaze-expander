@@ -112,6 +112,13 @@ export class ExpanderDevice {
         }).bind(this));
     }
 
+    blockUntilResolved(promise) {
+        let done = false;
+        promise.then(() => { done = true; });
+        while (!done)
+            node.runLoopOnce();
+    }
+
     /**
      * Send colours to the PBX channel. Optionally draws all colours, or blocks until complete.
      *
@@ -143,12 +150,7 @@ export class ExpanderDevice {
             this.promiseSerialWrite(dataMessage.toBytes()),
             drawAll ? this.drawAll() : Promise.resolve()
         ]);
-        if (blocking) {
-            let done = false;
-            promise.then(() => { done = true; });
-            while (!done)
-                node.runLoopOnce();
-        }
+        if(blocking) this.blockUntilResolved(promise);
         return promise;
     }
 
@@ -164,12 +166,7 @@ export class ExpanderDevice {
             this.promiseSerialWriteMaybeDrain(drawAllMessageBytes),
             new Promise(res => setTimeout(res, 5))
         ]);
-        if (blocking) {
-            let done = false;
-            promise.then(() => { done = true; });
-            while (!done)
-                node.runLoopOnce();
-        }
+        if(blocking) this.blockUntilResolved(promise);
         return promise;
     }
 }
