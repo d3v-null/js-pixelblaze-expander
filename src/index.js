@@ -2,7 +2,7 @@ const SerialPort = require('serialport');
 var node = require("deasync");
 const regeneratorRuntime = require("regenerator-runtime");
 
-const DEFAULT_OPTIONS = {
+export const DEFAULT_OPTIONS = {
     baudRate: 2000000,
     dataBits: 8,
     stopBits: 1,
@@ -12,21 +12,21 @@ const DEFAULT_OPTIONS = {
     }
 }
 
-const CHANNEL_MAX = 64;
-const MAX_CHANNEL_BYTES = 2048;
+export const CHANNEL_MAX = 64;
+export const MAX_CHANNEL_BYTES = 2048;
 
-const PBX_RECORD_TYPES = {
+export const PBX_RECORD_TYPES = {
     SET_CHANNEL_WS2812: 1,
     DRAW_ALL: 2,
     SET_CHANNEL_APA102_DATA: 3,
     SET_CHANNEL_APA102_CLOCK: 4
 }
 
-class PBColorOrder {
+export class PBColorOrder {
     constructor(...locations) {
         this.length = locations.length;
         if (this.length < 3 || this.length > 4) {
-            throw new Error(`Colour order (${JSON.stringify(locations)}) should be 3 or 4 numbers.`)
+            throw new Error(`Color order (${JSON.stringify(locations)}) should be 3 or 4 numbers.`)
         }
         this.locations = locations;
         this.union = 0;
@@ -48,13 +48,13 @@ class PBColorOrder {
     }
 }
 
-const PBX_COLOR_ORDERS = {
+export const PBX_COLOR_ORDERS = {
     RGBW: new PBColorOrder(0, 1, 2, 3),
     RGBV: new PBColorOrder(0, 1, 2, -1),
     RGB: new PBColorOrder(0, 1, 2),
 }
 
-class PBXHeader {
+export class PBXHeader {
     static size = 6;
     static magic = "UPXL";
 
@@ -102,7 +102,7 @@ function fmt_array_uint8(arr, indices = []) {
     return `0x${hex} (${arr.length})`;
 }
 
-class PBXCrc {
+export class PBXCrc {
     static size = 4;
 
     static table = [0x00000000, 0x77073096,
@@ -202,7 +202,7 @@ class PBXCrc {
     }
 }
 
-class PBXMessage {
+export class PBXMessage {
     static crc = new PBXCrc();
 
     static baseSize(type) {
@@ -283,13 +283,13 @@ class PBXMessage {
     }
 }
 
-class PBXDrawAllMessage extends PBXMessage {
+export class PBXDrawAllMessage extends PBXMessage {
     constructor() {
         super(0, 0, PBX_RECORD_TYPES.DRAW_ALL);
     }
 }
 
-class PBXDataMessage extends PBXMessage {
+export class PBXDataMessage extends PBXMessage {
     constructor(channel, type, order, capacity) {
         var order = PBXMessage.orderOrDefault(type, order);
         var capacity = PBXMessage.capacityOrDefault(type, order, capacity);
@@ -322,22 +322,57 @@ class PBXDataMessage extends PBXMessage {
     }
 }
 
-class PBXWS281XMessage extends PBXDataMessage {
+export class PBXWS281XMessage extends PBXDataMessage {
     static type = PBX_RECORD_TYPES.SET_CHANNEL_WS2812
     constructor(channel, order, capacity) {
         super(channel, PBXWS281XMessage.type, order, capacity)
     }
 }
 
-class PBAPA102DataMessage extends PBXDataMessage {
+export class PBAPA102DataMessage extends PBXDataMessage {
     // TODO
 }
 
-class PBAPA102ClockMessage extends PBXMessage {
+export class PBAPA102ClockMessage extends PBXMessage {
     // TODO
 }
 
-class ExpanderDevice {
+export class ExpanderDevice {
+    /**
+     * Construct a PixelBlaxe Expander Device.
+     *
+     * @param {string} portName the name of the
+     * [serial port](https://serialport.io/docs/api-stream#path) which the PBX board is connected
+     * to (For example, `/dev/tty.XXX` on Mac/Linux, or `COM1` on Windows)
+     * @param {DeviceOptions} options has the following structure:
+     *
+     * @typedef {Object} DeviceOptions
+     * @see <https://serialport.io/docs/api-stream#openoptions> for details.
+     * @param {Integer} [baudRate=2000000] you may wish to change to 2304000 if you're having
+     * timing issues (e.g. Raspberry Pi Zero).
+     * @param {Integer} [dataBits=8]
+     * @param {Integer} [stopBits=1]
+     * @param {string} [parity='none']
+     * @param {Object<uint6,ChannelDef>} [channels={0:{}}] Definition of each channel that has
+     * LEDs connected. Default is a single RGB WS281X device with maximum capacity on channel 0.
+     * Object Keys are the channel number as labeled on the PBX PCB or jumper pad configuration.
+     * Each board has 8 channels, and 8 boards can be chained, giving a maximum channel number of 64
+     * (uint6). Object values are channel definitions, which have the following structure:
+     *
+     * @typedef {Object} ChannelDef
+     * @param {string} [type='WS281X'] protocol used by PBX to talk to LEDs, only "WS281X" is
+     * currently supported. "APA102_DATA" and "APA_CLOCK" to be implemented soon.
+     * @param {string} [order=undefined] color order setting.
+     * For APA102, use 4 colors, default is "RGBW".
+     * For WS281X, use 3 or 4 colors, default is "RGB".
+     * Only "RGB" or "RGBW" are currently supported, but it's pretty easy to add more by extending
+     * `PBX_COLOR_ORDERS`.
+     * @param {uint16} [capacity=undefined] number of pixels connected to this channel. By default
+     * this is the maximum number of pixels that can be sent, for the channel, which depends on the
+     * number of color channels specified in `order` (`N` where `N ∈ [3, 4]`) and the base size of
+     * `type`. `baseSize` is 4 for WS2812 and 8 for APA102. So max capacity is defined by
+     * `Math.floor(2048 - 6 - baseSize(type) - 4) / N)`
+     */
     constructor(portName, options) {
         var options = { ...DEFAULT_OPTIONS, ...options };
         var { baudRate, dataBits, stopBits, parity, channels } = options;
@@ -386,20 +421,6 @@ class ExpanderDevice {
         })
     }
 
-    serialWriteBlocking(bytes) {
-        let done = false;
-        const result = this.port.write(bytes, function (err) {
-            if (err) {
-                console.error(err);
-            }
-            done = true;
-        })
-        while(!done) {
-            node.runLoopOnce();
-        }
-        return result;
-    }
-
     promiseSerialDrain() {
         return new Promise((res, rej) => {
             this.port.drain(function (err) {
@@ -409,19 +430,6 @@ class ExpanderDevice {
                 res(true);
             });
         })
-    }
-
-    serialDrainBlocking() {
-        let done = false;
-        this.port.drain(function (err) {
-            if (err) {
-                console.error(err);
-            }
-            done = true;
-        });
-        while(!done) {
-            node.runLoopOnce();
-        }
     }
 
     promiseSerialWriteMaybeDrain(bytes) {
@@ -441,13 +449,25 @@ class ExpanderDevice {
         }).bind(this))
     }
 
-    serialWriteMaybeDrain(bytes) {
-        const result = this.serialWriteBlocking(bytes);
-        if (!result) {
-            this.serialDrainBlocking();
-        }
-    }
-
+    /**
+     * Send colours to the PBX channel. Optionally draws all colours, or blocks until complete.
+     *
+     * @param {uint6} channel the channel, as marked on the PBX PCB or jumper pad configuration,
+     * and has been defined in `options.channels`
+     * @param {Array<ColourArray>} colors  an array containing a color array for each pixel on the
+     * channel, where the number of pixels does not exceed `options.channels[channel].capacity`
+     * @param {boolean} [drawAll=false] whether to send a drawAll command afterwards to refresh all
+     * strips
+     * @param {boolean} [blocking=false] whether to block until the call is complete
+     *
+     * @typedef {Array} ColourArray defines the value of each colour channel for a pixel
+     * @param {uint8} red
+     * @param {uint8} green
+     * @param {uint8} blue
+     * @param {uint8} [white] only required when `order` has 4 colours
+     *
+     * @returns {Promise} a promise to be resolved once the operation has finished
+     */
     send(channel, colors, drawAll = true, blocking = false) {
         if (!Object.keys(this.channelMessages).includes(channel.toString())) {
             throw new Error(
@@ -462,12 +482,18 @@ class ExpanderDevice {
         ]);
         if (blocking) {
             let done = false
-            promise.then(() => {done = true});
-            while(!done) node.runLoopOnce();
+            promise.then(() => { done = true });
+            while (!done) node.runLoopOnce();
         }
         return promise;
     }
 
+    /**
+     * Force the device to draw all channels.
+     *
+     * @param {boolean} [blocking=false] whether to block until the call is complete
+     * @returns {Promise} a promise to be resolved once the operation has finished
+     */
     drawAll(blocking = false) {
         const drawAllMessageBytes = this.drawAllMessage.toBytes();
         const promise = Promise.all([
@@ -476,26 +502,9 @@ class ExpanderDevice {
         ]);
         if (blocking) {
             let done = false
-            promise.then(() => {done = true});
-            while(!done) node.runLoopOnce();
+            promise.then(() => { done = true });
+            while (!done) node.runLoopOnce();
         }
         return promise;
     }
 }
-
-module.exports = {
-    ExpanderDevice,
-    PBColorOrder,
-    PBXHeader,
-    PBXCrc,
-    PBXMessage,
-    PBXDrawAllMessage,
-    PBXDataMessage,
-    PBXWS281XMessage,
-    ExpanderDevice,
-    DEFAULT_OPTIONS,
-    CHANNEL_MAX,
-    MAX_CHANNEL_BYTES,
-    PBX_RECORD_TYPES,
-    PBX_COLOR_ORDERS,
-};
