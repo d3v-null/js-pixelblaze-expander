@@ -1,4 +1,4 @@
-import { fmt_array_uint8 } from './header';
+import { fmt_array_uint8 } from "./fmt_uint8";
 
 
 export class PBXCrc {
