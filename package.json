@@ -1,6 +1,6 @@
 {
   "name": "pixelblaze-expander",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A Library for controlling pixelblaze expander A.K.A. ElectroMage Serial to 8x WS2812/APA102 Driver boards",
   "main": "src/index.js",
   "scripts": {
