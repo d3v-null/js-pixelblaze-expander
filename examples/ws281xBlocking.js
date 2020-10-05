@@ -42,9 +42,9 @@ class WS281XBlockingExample {
                 const { r, g, b } = hsl2Rgb((idx * 3) + (this.loopCount * 5), 100, 10);
                 return [r, g, b];
             });
-            this.device.sendBlocking(channel, colors, false);
+            this.device.send(channel, colors, false, true);
         })
-        this.device.drawAllBlocking();
+        this.device.drawAll(true);
         const frameRate = parseInt(1000 * this.loopCount / (Date.now() - this.startTime))
             .toString(10).padStart(10, ' ');
         const frameTime = Date.now() - loopStartTime;

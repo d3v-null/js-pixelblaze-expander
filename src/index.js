@@ -424,7 +424,7 @@ class ExpanderDevice {
         }
     }
 
-    promiseSerialWriteDrain(bytes) {
+    promiseSerialWriteMaybeDrain(bytes) {
         return new Promise((function (res, rej) {
             const result = this.port.write(bytes, function (err) {
                 if (err) {
@@ -441,14 +441,14 @@ class ExpanderDevice {
         }).bind(this))
     }
 
-    serialWriteDrain(bytes) {
+    serialWriteMaybeDrain(bytes) {
         const result = this.serialWriteBlocking(bytes);
         if (!result) {
             this.serialDrainBlocking();
         }
     }
 
-    send(channel, colors, drawAll = true) {
+    send(channel, colors, drawAll = true, blocking = false) {
         if (!Object.keys(this.channelMessages).includes(channel.toString())) {
             throw new Error(
                 `channel ${channel} is not defined, only `
@@ -456,32 +456,30 @@ class ExpanderDevice {
         }
         const dataMessage = this.channelMessages[channel];
         dataMessage.setPixels(colors);
-        const promises = [this.promiseSerialWrite(dataMessage.toBytes())];
-        if (drawAll) {
-            promises.push(this.drawAll());
+        const promise = Promise.all([
+            this.promiseSerialWrite(dataMessage.toBytes()),
+            drawAll ? this.drawAll() : Promise.resolve()
+        ]);
+        if (blocking) {
+            let done = false
+            promise.then(() => {done = true});
+            while(!done) node.runLoopOnce();
         }
-        return Promise.all(promises)
+        return promise;
     }
 
-    sendBlocking(channel, colors, drawAll) {
-        const dataMessage = this.channelMessages[channel];
-        dataMessage.setPixels(colors);
-        this.serialWriteBlocking((dataMessage.toBytes()));
-        if (drawAll) {
-            this.drawAllBlocking();
-        }
-    }
-
-    drawAll() {
+    drawAll(blocking = false) {
         const drawAllMessageBytes = this.drawAllMessage.toBytes();
-        return Promise.all([
-            this.promiseSerialWriteDrain(drawAllMessageBytes),
+        const promise = Promise.all([
+            this.promiseSerialWriteMaybeDrain(drawAllMessageBytes),
             new Promise(res => setTimeout(res, 5))
         ]);
-    }
-
-    drawAllBlocking() {
-        this.serialWriteDrain(this.drawAllMessage.toBytes())
+        if (blocking) {
+            let done = false
+            promise.then(() => {done = true});
+            while(!done) node.runLoopOnce();
+        }
+        return promise;
     }
 }
 
