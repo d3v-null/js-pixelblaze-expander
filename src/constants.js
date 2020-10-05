@@ -1,0 +1,9 @@
+export const CHANNEL_MAX = 64;
+export const MAX_CHANNEL_BYTES = 2048;
+
+export const PBX_RECORD_TYPES = {
+    SET_CHANNEL_WS2812: 1,
+    DRAW_ALL: 2,
+    SET_CHANNEL_APA102_DATA: 3,
+    SET_CHANNEL_APA102_CLOCK: 4
+};

@@ -1,4 +1,4 @@
-const { ExpanderDevice } = require('../src/index.js');
+import { ExpanderDevice } from '..';
 import { hsl2Rgb } from 'colorsys';
 
 /**
