@@ -64,17 +64,17 @@ var options = {
      * (Integer) channel number as labeled on the PBX PCB.
      */
     0: {
-      /**
-       * (String) color order setting. Default for APA102 is "RGBW", default for  Only "RGB" or
-       * "RGBW" are currently supported, but it's pretty easy to add more by extending
-       * `PBX_COLOR_ORDERS`.
-       */
-      order,
       /*
        * (String) protocol used by PBX to talk to LEDs, only "WS281X" is currently supported.
        * "APA102_DATA" and "APA_CLOCK" to be implemented soon.
        */
       type,
+      /**
+       * (String) color order setting. For APA102, use 4 colours, default is "RGBW". For WS281X,
+       * use 3 or 4 colours, default is "RGB".  Only "RGB" or "RGBW" are currently supported, but
+       * it's pretty easy to add more by extending `PBX_COLOR_ORDERS`.
+       */
+      order,
       /**
        * (Integer) number of pixels connected to this channel. By default this is the maximum
        * number of pixels that can be sent, for the channel, which depends on the number of
@@ -94,4 +94,4 @@ See [examples](examples) for more info. You can run the ws281x example with
 
 ```bash
 npx babel-node examples/ws281x.js
-````
+```
