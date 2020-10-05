@@ -22,7 +22,7 @@ export class PBXHeader {
     writeBytes(buffer, offset = 0) {
         offset = buffer.write(PBXHeader.magic, offset);
         offset = buffer.writeUInt8(this.channel, offset);
-        offset = buffer.writeUInt8(this.recordType, offset);
+        buffer.writeUInt8(this.recordType, offset);
     }
 
     toBytes() {
