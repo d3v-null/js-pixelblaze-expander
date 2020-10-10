@@ -1,10 +1,8 @@
 import { CHANNEL_MAX, PBX_RECORD_TYPES } from './constants';
 
+export const HEADER_SIZE = 6;
 
 export class PBXHeader {
-    static size = 6;
-    static magic = "UPXL";
-
     constructor(channel, recordType) {
         if (channel >= CHANNEL_MAX) {
             throw new Error(`Channel ${channel} larger than channel maximum, ${CHANNEL_MAX}`);
@@ -17,16 +15,18 @@ export class PBXHeader {
             throw new Error(`Record type ${recordType} is not one of ${JSON.stringify(PBX_RECORD_TYPES)}`);
         }
         this.recordType = recordType;
+
+        this.magic = "UPXL";
     }
 
     writeBytes(buffer, offset = 0) {
-        offset = buffer.write(PBXHeader.magic, offset);
+        offset = buffer.write(this.magic, offset);
         offset = buffer.writeUInt8(this.channel, offset);
         buffer.writeUInt8(this.recordType, offset);
     }
 
     toBytes() {
-        const result = Buffer.alloc(PBXHeader.size, 0);
+        const result = Buffer.alloc(HEADER_SIZE, 0);
         this.writeBytes(result);
         return result;
     }

@@ -1,11 +1,11 @@
-import { PBXCrc } from "./crc";
-import { PBXHeader } from "./header";
+import { PBXCrc, CRC_SIZE } from "./crc";
+import { PBXHeader, HEADER_SIZE } from "./header";
 import { PBX_COLOR_ORDERS } from "./colorOrder";
 import { PBX_RECORD_TYPES, MAX_CHANNEL_BYTES } from "./constants";
 
+export const MESSAGE_CRC = new PBXCrc();
 
 export class PBXMessage {
-    static crc = new PBXCrc();
 
     static baseSize(type) {
         switch (type) {
@@ -18,7 +18,7 @@ export class PBXMessage {
     }
 
     static totalSize(bodySize) {
-        return PBXHeader.size + bodySize + PBXCrc.size;
+        return HEADER_SIZE + bodySize + CRC_SIZE;
     }
 
     static capacityOrDefault(type, order, capacity) {
@@ -57,8 +57,8 @@ export class PBXMessage {
         this.size = PBXMessage.totalSize(bodySize);
         if (this.size > MAX_CHANNEL_BYTES) {
             throw new Error(
-                `Total size, ${this.size} = header size (${PBXHeader.size}) + body size (${bodySize})`
-                + ` + crc size (${PBXCrc.size}), is larger than maximum size: ${MAX_CHANNEL_BYTES}`);
+                `Total size, ${this.size} = header size (${HEADER_SIZE}) + body size (${bodySize})`
+                + ` + crc size (${CRC_SIZE}), is larger than maximum size: ${MAX_CHANNEL_BYTES}`);
         }
         this.buffer = Buffer.alloc(this.size);
         this.header = new PBXHeader(channel, type);
@@ -70,17 +70,17 @@ export class PBXMessage {
     }
 
     updateCrc() {
-        PBXMessage.crc.reset();
-        PBXMessage.crc.updateBytes(this.buffer, 0, this.size - PBXCrc.size);
+        MESSAGE_CRC.reset();
+        MESSAGE_CRC.updateBytes(this.buffer, 0, this.size - CRC_SIZE);
     }
 
     writeCrc() {
-        PBXMessage.crc.writeInvSum(this.buffer, this.size - PBXCrc.size);
+        MESSAGE_CRC.writeInvSum(this.buffer, this.size - CRC_SIZE);
     }
 
     toBytes() {
-        this.updateCrc(PBXMessage.crc);
-        this.writeCrc(PBXMessage.crc);
+        this.updateCrc(MESSAGE_CRC);
+        this.writeCrc(MESSAGE_CRC);
         return this.buffer;
     }
 }
@@ -106,7 +106,7 @@ export class PBXDataMessage extends PBXMessage {
     }
 
     writeBase() {
-        var offset = PBXHeader.size;
+        var offset = HEADER_SIZE;
         offset = this.buffer.writeUInt8(this.order.length, offset);
         offset = this.buffer.writeUInt8(this.order.union, offset);
         const result = this.buffer.writeUInt16LE(this.capacity, offset);
@@ -117,7 +117,7 @@ export class PBXDataMessage extends PBXMessage {
         if (pixels.length > this.capacity) {
             throw new Error(`pixel count (${pixels.length}) > capacity (${this.capacity})`);
         }
-        var offset = PBXHeader.size + this.baseSize;
+        var offset = HEADER_SIZE + this.baseSize;
         pixels.forEach((color) => {
             offset = this.order.writeColor(this.buffer, color, offset);
         });
@@ -125,9 +125,8 @@ export class PBXDataMessage extends PBXMessage {
 }
 
 export class PBXWS281XMessage extends PBXDataMessage {
-    static type = PBX_RECORD_TYPES.SET_CHANNEL_WS2812;
     constructor(channel, order, capacity) {
-        super(channel, PBXWS281XMessage.type, order, capacity);
+        super(channel, PBX_RECORD_TYPES.SET_CHANNEL_WS2812, order, capacity);
     }
 }
 

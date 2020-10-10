@@ -1,4 +1,4 @@
-import { PBXCrc } from "./crc";
+import { PBXCrc, CRC_SIZE } from "./crc";
 
 describe('PBXCrc', () => {
     it('matches updateBytes Java implementation', () => {
@@ -24,7 +24,7 @@ describe('PBXCrc', () => {
         crc.updateBytes([
             0x55, 0x50, 0x58, 0x4c, 0x00, 0x02
         ]);
-        const result = Buffer.alloc(PBXCrc.size);
+        const result = Buffer.alloc(CRC_SIZE);
         crc.writeInvSum(result, 0);
         expect(result).toEqual(Buffer.from([
             0xe9, 0xc5, 0xa5, 0x4c

@@ -1,8 +1,8 @@
-import { PBXCrc } from "./crc";
-import { PBXHeader } from "./header";
+import { CRC_SIZE } from "./crc";
+import { HEADER_SIZE } from "./header";
 import { PBX_COLOR_ORDERS } from "./colorOrder";
 import { PBX_RECORD_TYPES } from "./constants";
-import { PBXDrawAllMessage, PBXWS281XMessage, PBXMessage } from "./messages";
+import { PBXDrawAllMessage, PBXWS281XMessage, PBXMessage, MESSAGE_CRC } from "./messages";
 
 describe('PBXMessage', () => {
     it('writes basic drawall header with writeHeader', () => {
@@ -15,14 +15,14 @@ describe('PBXMessage', () => {
     it('updates CRC for basic drawall header with updateCrc', () => {
         const message = new PBXMessage(0, 0, PBX_RECORD_TYPES.DRAW_ALL);
         message.updateCrc();
-        expect(PBXMessage.crc.sum >>> 0).toEqual(3009034774 >>> 0);
+        expect(MESSAGE_CRC.sum >>> 0).toEqual(3009034774 >>> 0);
     });
 
     it('writes CRC for basic drawall message with writeCrc', () => {
         const message = new PBXMessage(0, 0, PBX_RECORD_TYPES.DRAW_ALL);
-        PBXMessage.crc.sum = 3009034774 >>> 0;
+        MESSAGE_CRC.sum = 3009034774 >>> 0;
         message.writeCrc();
-        expect(message.buffer.slice(message.size - PBXCrc.size, message.size)).toEqual(Buffer.from([
+        expect(message.buffer.slice(message.size - CRC_SIZE, message.size)).toEqual(Buffer.from([
             0xe9, 0xc5, 0xa5, 0x4c
         ]));
     });
@@ -39,7 +39,7 @@ describe('PBXWS281XMessage', () => {
     it('writes base correctly', () => {
         const message = new PBXWS281XMessage(1, PBX_COLOR_ORDERS.RGB, 1);
         message.writeBase();
-        expect(message.buffer.slice(PBXHeader.size, PBXHeader.size + 4)).toEqual(Buffer.from([
+        expect(message.buffer.slice(HEADER_SIZE, HEADER_SIZE + 4)).toEqual(Buffer.from([
             0x03, 0x24, 0x01, 0x00
         ]));
 
