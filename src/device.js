@@ -2,6 +2,7 @@ import { getMessageClass, PBXDrawAllMessage } from './messages';
 import { PBX_COLOR_ORDERS } from './colorOrder';
 import SerialPort from 'serialport';
 import node from 'deasync';
+import { createWriteStream } from 'fs';
 
 export const DEFAULT_OPTIONS = {
     baudRate: 2000000,
@@ -10,7 +11,8 @@ export const DEFAULT_OPTIONS = {
     parity: 'none',
     channels: {
         0: {}
-    }
+    },
+    mock: false
 };
 
 export class ExpanderDevice {
@@ -51,19 +53,27 @@ export class ExpanderDevice {
      */
     constructor(portName, options) {
         var options = { ...DEFAULT_OPTIONS, ...options };
-        var { baudRate, dataBits, stopBits, parity, channels } = options;
-        this.port = new SerialPort(portName, { baudRate, dataBits, stopBits, parity });
-        this.port.on('error', function (err) {
-            if (err) {
-                return console.error('Error on write: ', err.message);
-            }
-        });
-        this.port.on('open', function (err) {
-            if (err) {
-                return console.log('Error opening port: ', err.message);
-            }
-            console.log('port opened', JSON.stringify(arguments));
-        });
+        var { baudRate, dataBits, stopBits, parity, channels, mock } = options;
+
+        this.mock = mock;
+
+        if(this.mock) {
+            this.startTime = Date.now();
+            this.port = createWriteStream(portName, {flags: 'w'});
+        } else {
+            this.port = new SerialPort(portName, { baudRate, dataBits, stopBits, parity });
+            this.port.on('error', function (err) {
+                if (err) {
+                    return console.error('Error on write: ', err.message);
+                }
+            });
+            this.port.on('open', function (err) {
+                if (err) {
+                    return console.log('Error opening port: ', err.message);
+                }
+                console.log('port opened', JSON.stringify(arguments));
+            });
+        }
         this.channelMessages = {};
         Object.entries(channels).forEach(([channel, { order, type, capacity }]) => {
             // console.log(`channel: ${JSON.stringify({ channel, order, capacity, type })}`);
@@ -73,7 +83,21 @@ export class ExpanderDevice {
         this.drawAllMessage = new PBXDrawAllMessage();
     }
 
+    mockWrite(bytes) {
+        const magic = "SERT"
+        const header = Buffer.alloc(magic.length + 8 + 4);
+        var index = 0;
+        index = header.write(magic);
+        index = header.writeBigInt64LE(BigInt(Date.now() - this.startTime), index);
+        header.writeInt32LE(bytes.length, index);
+        this.port.write(header);
+        this.port.write(bytes);
+    }
+
     promiseSerialWrite(bytes) {
+        if(this.mock) {
+            return this.mockWrite(bytes);
+        }
         return new Promise((res, rej) => {
             this.port.write(bytes, function (err) {
                 if (err) {
@@ -96,6 +120,9 @@ export class ExpanderDevice {
     }
 
     promiseSerialWriteMaybeDrain(bytes) {
+        if(this.mock) {
+            return this.mockWrite(bytes);
+        }
         return new Promise((function (res, rej) {
             const result = this.port.write(bytes, function (err) {
                 if (err) {
